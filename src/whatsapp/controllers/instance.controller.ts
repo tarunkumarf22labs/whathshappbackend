@@ -88,10 +88,13 @@ export class InstanceController {
   }
 
   public async connectToWhatsapp({ instanceName }: InstanceDto) {
+    console.log(instanceName);
     try {
       const instance = this.waMonitor.waInstances[instanceName];
       const state = instance?.connectionStatus?.state;
 
+      console.log(state, 'state');
+      console.log(instance, state, 'state', 'instance');
       switch (state) {
         case 'close':
           await instance.connectToWhatsapp();
@@ -112,6 +115,8 @@ export class InstanceController {
   }
 
   public async fetchInstances({ instanceName }: InstanceDto) {
+    console.log('ins name', instanceName);
+
     if (instanceName) {
       return this.waMonitor.instanceInfo(instanceName);
     }

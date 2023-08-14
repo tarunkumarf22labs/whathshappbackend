@@ -44,6 +44,8 @@ export const dbserver = (() => {
     const dbs = mongoose.createConnection(db.CONNECTION.URI, {
       dbName: db.CONNECTION.DB_PREFIX_NAME + '-whatsapp-api',
     });
+    console.log('DB...');
+
     logger.info('ON - dbName: ' + dbs['$dbName']);
     process.on('beforeExit', () => {
       dbserver.destroy(true, (error) => logger.error(error));

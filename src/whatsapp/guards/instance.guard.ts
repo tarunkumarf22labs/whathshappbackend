@@ -80,8 +80,11 @@ async function getInstance(instanceName: string) {
 export async function instanceExistsGuard(req: Request, _: Response, next: NextFunction) {
   if (
     req.originalUrl.includes('/instance/create') ||
-    req.originalUrl.includes('/instance/fetchInstances')
+    req.originalUrl.includes('/instance/fetchInstances') ||
+    req.originalUrl.includes('/dev/init')
   ) {
+    console.log('GOT!!');
+
     return next();
   }
 

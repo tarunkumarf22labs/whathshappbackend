@@ -51,7 +51,7 @@ import { AuthRepository } from './auth.repository';
 import { Auth, ConfigService, Database } from '../../config/env.config';
 import { execSync } from 'child_process';
 import { join } from 'path';
-
+import { existsSync, mkdirSync } from 'fs';
 export class RepositoryBroker {
   constructor(
     public readonly message: MessageRepository,
@@ -75,19 +75,30 @@ export class RepositoryBroker {
 
   private __init_repo_without_db__() {
     if (!this.configService.get<Database>('DATABASE').ENABLED) {
+      // const storePath = join(process.cwd(), 'store');
+      // execSync(
+      //   `mkdir -p ${join(
+      //     storePath,
+      //     'auth',
+      //     this.configService.get<Auth>('AUTHENTICATION').TYPE,
+      //   )}`,
+      // );
+
+      const createDirectoryIfNotExists = (dir: string) => {
+        if (!existsSync(dir)) {
+          mkdirSync(dir);
+        }
+      };
+
       const storePath = join(process.cwd(), 'store');
-      execSync(
-        `mkdir -p ${join(
-          storePath,
-          'auth',
-          this.configService.get<Auth>('AUTHENTICATION').TYPE,
-        )}`,
-      );
-      execSync(`mkdir -p ${join(storePath, 'chats')}`);
-      execSync(`mkdir -p ${join(storePath, 'contacts')}`);
-      execSync(`mkdir -p ${join(storePath, 'messages')}`);
-      execSync(`mkdir -p ${join(storePath, 'message-up')}`);
-      execSync(`mkdir -p ${join(storePath, 'webhook')}`);
+      const authType = this.configService.get<Auth>('AUTHENTICATION').TYPE;
+
+      createDirectoryIfNotExists(join(storePath, 'auth', authType));
+      createDirectoryIfNotExists(join(storePath, 'chats'));
+      createDirectoryIfNotExists(join(storePath, 'contacts'));
+      createDirectoryIfNotExists(join(storePath, 'messages'));
+      createDirectoryIfNotExists(join(storePath, 'message-up'));
+      createDirectoryIfNotExists(join(storePath, 'webhook'));
     }
   }
 }

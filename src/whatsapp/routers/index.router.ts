@@ -35,8 +35,8 @@
  * └──────────────────────────────────────────────────────────────────────────────┘
  */
 
-import { Router } from 'express';
-import { Auth, configService } from '../../config/env.config';
+import { RequestHandler, Router } from 'express';
+import { Auth, ConfigService, configService } from '../../config/env.config';
 import { instanceExistsGuard, instanceLoggedGuard } from '../guards/instance.guard';
 import { authGuard } from '../guards/auth.guard';
 import { ChatRouter } from './chat.router';
@@ -45,6 +45,9 @@ import { InstanceRouter } from './instance.router';
 import { MessageRouter } from './sendMessage.router';
 import { ViewsRouter } from './view.router';
 import { WebhookRouter } from './webhook.router';
+import { instanceController, sendMessageController } from '../whatsapp.module';
+import { RouterBroker } from '../abstract/abstract.router';
+import { InstanceDto } from '../dto/instance.dto';
 
 enum HttpStatus {
   OK = 200,
@@ -59,8 +62,79 @@ enum HttpStatus {
 const router = Router();
 const authType = configService.get<Auth>('AUTHENTICATION').TYPE;
 const guards = [instanceExistsGuard, instanceLoggedGuard, authGuard[authType]];
+const devRouter = Router();
+
+devRouter
+  .get('/init', async (req, res) => {
+    const { id, ts } = req.query as { id: string; ts: string };
+
+    console.log(id, 'id');
+
+    try {
+      const response = await instanceController.fetchInstances({
+        instanceName: id,
+      });
+      console.log('response', response);
+      res.send(response);
+    } catch (e) {
+      console.log(e);
+      //!  time out issue
+      if (e.status == 404) {
+        const response = await instanceController.createInstance({ instanceName: id });
+        const connect = await instanceController.connectToWhatsapp({
+          instanceName: response.instance.instanceName,
+        });
+        res.send(connect);
+      }
+    }
+
+    // const dummy = new DummyRouter(configService, ...guards);
+
+    // const response = await dummy.fetchInstances(req);
+  })
+  .get('/send-message', async (req, res) => {
+    const { to_phone, message, id } = req.query as {
+      to_phone: string;
+      message: string;
+      id: string;
+    };
+
+    console.log(to_phone, message, id);
+
+    try {
+      const response = await sendMessageController.sendText(
+        { instanceName: id },
+        {
+          textMessage: { text: message },
+          number: to_phone,
+          options: {
+            delay: 1200,
+          },
+        },
+      );
+
+      console.log(response);
+
+      res.send({ response });
+    } catch (error) {
+      console.log(error);
+    }
+  })
+  .get('/broadcast-message', (req, res) => {
+    res.send({ sucess: true });
+  })
+  .get('/get-details', (req, res) => {
+    res.send({ sucess: true });
+  })
+  .get('/on-whatsapp', (req, res) => {
+    res.send({ sucess: true });
+  })
+  .get('/check-tenant', (req, res) => {
+    res.send({ sucess: true });
+  });
 
 router
+  .use('/dev', devRouter)
   .use(
     '/instance',
     new InstanceRouter(configService, ...guards).router,
@@ -72,3 +146,10 @@ router
   .use('/webhook', new WebhookRouter(...guards).router);
 
 export { router, HttpStatus };
+
+// GET | http://localhost:3000/dev/init                                             │
+// │   GET | http://localhost:3000/dev/send-message                                     │
+// │   GET | http://localhost:3000/dev/broadcast-message                                │   │
+// │   GET | http://localhost:3000/dev/get-details                                      │         │
+// │   GET | http://localhost:3000/dev/on-whatsapp                                      │         │
+// │   GET | http://localhost:3000/dev/check-tenant                                     │
